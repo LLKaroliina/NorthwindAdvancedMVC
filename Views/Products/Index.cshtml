@@ -6,14 +6,145 @@
     ViewBag.Title = "Index";
 }
 
+<script ssrc="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+
 <!--tämä on JQueryä-->
-@section scripts {
+@section scripts
+{
     <script type="text/javascript">
         $("#singleSelectedCategoryID").on("change", function () {
             //Getting Value
             var selValue = $("#singleSelectedCategoryID").val();
             document.getElementById("ProductCategory").value = selValue;
         });
+    </script>
+    <!--tämä on JQueryä-->
+
+
+
+    <script type="text/javascript">
+        //JQuery Dropdown valikko 1.pv - video 15
+
+        //Klikkauksen kuuntelija
+
+        //Tuotteen myynti -kaavion
+        $(function () {
+            $(".getProductName").click(function () {
+                let productName = $(this).data("productname");
+                drawLineChart(productName);
+
+            })
+
+        });
+
+        //Datan haku kontrollerista
+
+        function drawLineChart(productName) {
+
+            let url = "/Products/_ProductSalesPerDate/?productName=" + productName;
+
+            var jsonData = $.ajax
+                ({
+
+                    url: url,
+
+                    dataType: 'json',
+
+                }).done(function (results) {
+
+                    console.log(results);
+
+                    //Split timestamp and data into separate arrays
+
+                    var salesLabels = [], salesData = [];
+
+                    for (let i = 0; i < results.length; i++) {
+
+                        salesData.push(results[i].DailySales);
+
+                        salesLabels.push(results[i].OrderDate);
+
+                    }
+
+                    renderChart(salesData, salesLabels, productName);
+
+                });
+
+        }
+
+        //Chartin piirto ja modaali-ikkunan kutsu
+
+        function renderChart(dataValues, labelTexts, productName) {
+
+            var ctx = document.getElementById('barcanvas').getContext('2d');
+
+            var barcanvas = new Chart(ctx,
+                {
+
+                    type: 'line',
+
+                    data:
+                    {
+
+                        labels: labelTexts,
+
+                        datasets:
+                            [{
+
+                                label: 'Daily product sales for ' + productName,
+
+                                data: dataValues,
+
+                                backgroundColor: [
+
+                                    'rgba(255, 99, 232, 0.2)'
+
+                                ],
+
+                                borderColor: [
+
+                                    'rgba(255, 99, 132, 1)'
+
+                                ],
+
+                                borderWidth: 2
+
+                            }]
+
+                    },
+
+                    options:
+                    {
+
+                        scales:
+                        {
+
+                            yAxes:
+                                [{
+
+                                    ticks:
+                                    {
+
+                                        beginAtZero: true,
+
+                                        stepSize: 100
+
+                                    }
+
+                                }]
+
+                        }
+
+                    }
+
+                });
+
+            $('#ProductSalesPerDateModal').modal('show');
+
+        }
     </script>
 }
 
@@ -28,9 +159,11 @@
         <p class="px-1">@Html.Label("Find by name:")</p>
         <p class="px-1">@Html.TextBox("SearchString1", ViewBag.currentFilter1 as string, new { @class = "form-control" })</p>
         <p class="px-1">@Html.Label("Find by Product Category:")</p>
-        <p class="px-1"> @Html.Hidden("ProductCategory", ViewBag.currentProductCategory as string, new{@id = "ProductCategory",@class = "form-control"})
+        <p class="px-1">
+            @Html.Hidden("ProductCategory", ViewBag.currentProductCategory as string, new { @id = "ProductCategory", @class = "form-control" })
         </p> @*piilotettu kenttä, jolla tehdään kontrollerihaku*@
-        <p class="px-1">@Html.DropDownList("CategoryID", null, htmlAttributes: new{@id = "singleSelectedCategoryID",@class = "form-control"})
+        <p class="px-1">
+            @Html.DropDownList("CategoryID", null, htmlAttributes: new { @id = "singleSelectedCategoryID", @class = "form-control" })
         </p><p class="px-1"><input type="submit" value="Search" class="form-control" /></p>
     </div>
 }
@@ -38,6 +171,9 @@
 
 <table class="table">
     <tr>
+        <th>
+
+        </th>
         <th>
             @Html.ActionLink("Products", "Index", new { sortOrder = ViewBag.ProductNameSortParm, currentFilter1 = ViewBag.currentFilter1, currentProductGategory = ViewBag.currentProductCategory })
         </th>
@@ -74,6 +210,9 @@
     @foreach (var item in Model) //etsitään loopilla dataa
     {
         <tr>
+            <td>
+                <button class="btn-dark getProductName fas fa-chart-bar" style="border-radius:4px;" data-productname="@item.ProductName"></button>
+            </td>
             <td>
                 @Html.DisplayFor(modelItem => item.ProductName)
             </td>
@@ -140,3 +279,6 @@
 </table>
 Page @(Model.PageCount < Model.PageNumber ? 0 : Model.PageNumber) of @Model.PageCount
 @Html.PagedListPager(Model, page => Url.Action("Index", new { page, sortOrder = ViewBag.CurrentSort, currentFilter1 = ViewBag.currentFilter1, currentProductCategory = ViewBag.currentProductCategory }))
+@{
+    Html.RenderPartial("_ProductSalesPerDate");
+}

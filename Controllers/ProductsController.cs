@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Entity;
+using System.Data.Entity.SqlServer;
 using System.Data.SqlClient;
 using System.Drawing;
 using System.Linq;
@@ -11,6 +12,7 @@ using System.Web;
 using System.Web.Mvc;
 using Microsoft.Ajax.Utilities;
 using NorthwindAdvancedMVC.Models;
+using NorthwindAdvancedMVC.ViewModels;
 using PagedList;
 
 namespace NorthwindAdvancedMVC.Controllers
@@ -263,6 +265,43 @@ namespace NorthwindAdvancedMVC.Controllers
                 db.Dispose();
             }
             base.Dispose(disposing);
+        }
+        public ActionResult _ProductSalesPerDate(string productName)
+
+        {
+
+            //if (String.IsNullOrEmpty(productName)) productName = "Lakkalikööri";  //debuggausta varten
+
+
+
+            List<DailyProductSales> dailyproductsalesList = new List<DailyProductSales>();
+
+
+
+            var orderSummary = from pds in db.ProductsDailySales
+
+                               where pds.ProductName == productName
+
+                               orderby pds.OrderDate
+
+
+
+                               select new DailyProductSales
+
+                               {
+
+                                   OrderDate = SqlFunctions.DateName("year", pds.OrderDate) + "." + SqlFunctions.DateName("MM", pds.OrderDate) + "." + SqlFunctions.DateName("day", pds.OrderDate),
+
+
+
+                                   DailySales = (float)pds.DailySales,
+
+                                   ProductName = pds.ProductName
+
+                               };
+
+            return Json(orderSummary, JsonRequestBehavior.AllowGet);
+
         }
     }
 }
